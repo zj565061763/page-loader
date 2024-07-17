@@ -33,7 +33,7 @@ interface FPageLoader<T> {
     ): Result<List<T>>
 
     /**
-     * 加载更多，如果当前正在刷新或者正在加载更多，会抛出[CancellationException]取消异常
+     * 加载更多，如果当前正在刷新或者正在加载更多，会抛出[CancellationException]异常，取消本次调用
      *
      * @param notifyLoading 是否通知[PageState.isAppending]
      * @param onLoad 加载回调
