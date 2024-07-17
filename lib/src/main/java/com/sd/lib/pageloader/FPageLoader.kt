@@ -53,11 +53,6 @@ interface FPageLoader<T> {
      */
     suspend fun cancelAppend()
 
-    /**
-     * 设置数据
-     */
-    fun setData(data: List<T>)
-
     interface LoadScope<T> {
         /** 当前状态 */
         val currentState: PageState<T>
@@ -231,12 +226,6 @@ private class PageLoaderImpl<T>(
 
     override suspend fun cancelAppend() {
         _appendLoader.cancelLoad()
-    }
-
-    override fun setData(data: List<T>) {
-        _state.update {
-            it.copy(data = data)
-        }
     }
 
     private fun getAppendPage(): Int {
