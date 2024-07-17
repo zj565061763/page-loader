@@ -22,7 +22,7 @@ interface FPageLoader<T> {
     val stateFlow: StateFlow<PageState<T>>
 
     /**
-     * 刷新，如果当前正在刷新或者正在加载更多，会被取消
+     * 刷新，如果当前正在刷新或者正在加载更多，会取消正在进行的加载
      *
      * @param notifyLoading 是否通知[PageState.isRefreshing]
      * @param onLoad 加载回调
