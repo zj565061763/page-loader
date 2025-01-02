@@ -101,13 +101,15 @@ class PageAppendTest {
       }
     }
 
-    loader.append { error("failure") }.let { result ->
-      assertEquals(true, result.isFailure)
-      assertEquals("failure", result.exceptionOrNull()!!.message)
+    loader.append {
+      error("append failure")
+    }.also { result ->
+      assertEquals("append failure", result.exceptionOrNull()!!.message)
     }
-    loader.state.run {
+
+    with(loader.state) {
       assertEquals(emptyList<Int>(), data)
-      assertEquals("failure", loadResult!!.exceptionOrNull()!!.message)
+      assertEquals("append failure", loadResult!!.exceptionOrNull()!!.message)
       assertEquals(null, loadPage)
       assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
