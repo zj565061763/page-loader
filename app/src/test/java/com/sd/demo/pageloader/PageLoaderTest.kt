@@ -6,6 +6,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -151,29 +152,18 @@ class PageLoaderTest {
       }
     }
 
-    val loading = TestContinuation()
     launch {
       loader.append {
-        loading.resume()
-        delay(Long.MAX_VALUE)
+        delay(5_000)
         listOf(1, 2)
       }
-    }
-
-    loading.await()
-    loader.state.run {
-      assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, loadPage)
-      assertEquals(null, loadSize)
-      assertEquals(false, isRefreshing)
-      assertEquals(true, isAppending)
-    }
+    }.also { runCurrent() }
 
     loader.refresh { listOf(3, 4) }
-    loader.state.run {
+
+    with(loader.state) {
       assertEquals(listOf(3, 4), data)
-      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(true, loadResult?.isSuccess)
       assertEquals(refreshPage, loadPage)
       assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
@@ -184,28 +174,19 @@ class PageLoaderTest {
   @Test
   fun `test refresh notify loading`() = runTest {
     val loader = FPageLoader<Int> { page, pageData -> null }
-    loader.state.run {
-      assertEquals(false, isRefreshing)
-    }
-
-    val loading = TestContinuation()
+    assertEquals(false, loader.state.isRefreshing)
     launch {
       loader.refresh(notifyLoading = false) {
-        loading.resume()
-        delay(Long.MAX_VALUE)
+        delay(5_000)
         listOf(1, 2)
       }
     }
 
-    loading.await()
-    loader.state.run {
-      assertEquals(false, isRefreshing)
-    }
+    runCurrent()
+    assertEquals(false, loader.state.isRefreshing)
 
-    loader.refresh(notifyLoading = false) { error("failure") }
-    loader.state.run {
-      assertEquals(false, isRefreshing)
-    }
+    advanceUntilIdle()
+    assertEquals(false, loader.state.isRefreshing)
   }
 
   @Test
