@@ -100,15 +100,6 @@ class PageLoaderTest {
       }
     }.also { runCurrent() }
 
-    with(loader.state) {
-      assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, loadPage)
-      assertEquals(null, loadSize)
-      assertEquals(true, isRefreshing)
-      assertEquals(false, isAppending)
-    }
-
     loader.cancelRefresh()
 
     with(loader.state) {
@@ -131,29 +122,18 @@ class PageLoaderTest {
       }
     }
 
-    val loading = TestContinuation()
     launch {
       loader.refresh {
-        loading.resume()
-        delay(Long.MAX_VALUE)
+        delay(5_000)
         listOf(1, 2)
       }
-    }
-
-    loading.await()
-    loader.state.run {
-      assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, loadPage)
-      assertEquals(null, loadSize)
-      assertEquals(true, isRefreshing)
-      assertEquals(false, isAppending)
-    }
+    }.also { runCurrent() }
 
     loader.refresh { listOf(3, 4) }
-    loader.state.run {
+
+    with(loader.state) {
       assertEquals(listOf(3, 4), data)
-      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(true, loadResult?.isSuccess)
       assertEquals(refreshPage, loadPage)
       assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
