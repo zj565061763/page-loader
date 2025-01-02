@@ -1,17 +1,12 @@
 package com.sd.lib.pageloader
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.atomic.AtomicReference
 
 interface FPageLoader<T> {
 
@@ -124,10 +119,10 @@ private class PageLoaderImpl<T>(
   private val dataHandler: suspend FPageLoader.LoadScope<T>.(page: Int, pageData: List<T>) -> List<T>?,
 ) : FPageLoader<T>, FPageLoader.LoadScope<T> {
 
-  private val _refreshLoader = FLoader()
-  private val _appendLoader = FLoader()
+  private val _refreshLoader = MutatorMutex()
+  private val _appendLoader = MutatorMutex()
 
-  private val _state = MutableStateFlow(
+  private val _stateFlow = MutableStateFlow(
     PageState(
       data = initial,
       refreshPage = refreshPage,
@@ -135,49 +130,34 @@ private class PageLoaderImpl<T>(
   )
 
   override val state: PageState<T>
-    get() = _state.value
+    get() = _stateFlow.value
 
   override val stateFlow: StateFlow<PageState<T>>
-    get() = _state.asStateFlow()
+    get() = _stateFlow.asStateFlow()
 
   override val currentState: PageState<T>
-    get() = _state.value
+    get() = _stateFlow.value
 
   override suspend fun refresh(
     notifyLoading: Boolean,
     onLoad: suspend FPageLoader.LoadScope<T>.(page: Int) -> List<T>,
   ): Result<List<T>> {
-    return _refreshLoader.load(
+    // 刷新之前，取消加载更多
+    cancelAppend()
+    return load(
+      mutator = _refreshLoader,
+      onStart = {
+        if (notifyLoading) {
+          _stateFlow.update { it.copy(isRefreshing = true) }
+        }
+      },
       onFinish = {
         if (notifyLoading) {
-          _state.update { it.copy(isRefreshing = false) }
+          _stateFlow.update { it.copy(isRefreshing = false) }
         }
       },
-      onLoad = {
-        // 取消加载更多
-        cancelAppend()
-
-        if (notifyLoading) {
-          _state.update { it.copy(isRefreshing = true) }
-        }
-
-        val page = state.refreshPage
-
-        try {
-          onLoad(page).also { data ->
-            handleLoadSuccess(page, data)
-          }
-        } catch (e: Throwable) {
-          if (e is CancellationException) {
-            // 取消异常
-          } else {
-            _state.update {
-              it.copy(result = Result.failure(e))
-            }
-          }
-          throw e
-        }
-      },
+      getPage = { state.refreshPage },
+      onLoad = onLoad,
     )
   }
 
@@ -188,44 +168,55 @@ private class PageLoaderImpl<T>(
     if (state.isRefreshing || state.isAppending) {
       throw AppendCancellationException()
     }
-
-    return _appendLoader.load(
+    return load(
+      mutator = _appendLoader,
+      onStart = {
+        if (notifyLoading) {
+          _stateFlow.update { it.copy(isAppending = true) }
+        }
+      },
       onFinish = {
         if (notifyLoading) {
-          _state.update { it.copy(isAppending = false) }
+          _stateFlow.update { it.copy(isAppending = false) }
         }
       },
-      onLoad = {
-        if (notifyLoading) {
-          _state.update { it.copy(isAppending = true) }
-        }
-
-        val page = getAppendPage()
-
-        try {
-          onLoad(page).also { data ->
-            handleLoadSuccess(page, data)
-          }
-        } catch (e: Throwable) {
-          if (e is CancellationException) {
-            // 取消异常
-          } else {
-            _state.update {
-              it.copy(result = Result.failure(e))
-            }
-          }
-          throw e
-        }
-      },
+      getPage = { getAppendPage() },
+      onLoad = onLoad,
     )
   }
 
+  private suspend fun load(
+    mutator: MutatorMutex,
+    onStart: () -> Unit,
+    onFinish: () -> Unit,
+    getPage: () -> Int,
+    onLoad: suspend FPageLoader.LoadScope<T>.(page: Int) -> List<T>,
+  ): Result<List<T>> {
+    return mutator.mutate {
+      val page = getPage()
+      try {
+        onStart()
+        onLoad(page)
+          .also { handleLoadSuccess(page, it) }
+          .let { Result.success(it) }
+      } catch (e: Throwable) {
+        if (e is CancellationException) throw e
+        Result.failure<List<T>>(e).also {
+          currentCoroutineContext().ensureActive()
+          _stateFlow.update { it.copy(result = Result.failure(e)) }
+        }
+      } finally {
+        onFinish()
+      }
+    }
+  }
+
   override suspend fun cancelRefresh() {
-    _refreshLoader.cancelLoad()
+    _refreshLoader.cancelAndJoin()
   }
 
   override suspend fun cancelAppend() {
-    _appendLoader.cancelLoad()
+    _appendLoader.cancelAndJoin()
   }
 
   private fun getAppendPage(): Int {
@@ -239,9 +230,9 @@ private class PageLoaderImpl<T>(
     val totalData = dataHandler(page, data)
     currentCoroutineContext().ensureActive()
 
-    _state.update {
-      it.copy(
-        data = totalData ?: it.data,
+    _stateFlow.update { state ->
+      state.copy(
+        data = totalData ?: state.data,
         result = Result.success(Unit),
         page = page,
         pageSize = data.size,
@@ -252,158 +243,6 @@ private class PageLoaderImpl<T>(
 
 private class AppendCancellationException : CancellationException("Append cancellation") {
   override fun fillInStackTrace(): Throwable {
-    stackTrace = emptyArray()
-    return this
-  }
-}
-
-//-------------------- FLoader --------------------
-
-private interface FLoader {
-
-  /** 状态 */
-  val state: LoaderState
-
-  /** 状态流 */
-  val stateFlow: StateFlow<LoaderState>
-
-  /**
-   * 是否正在加载中
-   */
-  fun isLoading(): Boolean
-
-  /**
-   * 开始加载，如果上一次加载还未完成，再次调用此方法，会取消上一次加载([CancellationException])，
-   * 如果[onLoad]触发了，则[onFinish]一定会触发，[onLoad]的异常会被捕获，除了[CancellationException]
-   *
-   * @param onFinish 结束回调
-   * @param onLoad 加载回调
-   */
-  suspend fun <T> load(
-    onFinish: () -> Unit = {},
-    onLoad: suspend () -> T,
-  ): Result<T>
-
-  /**
-   * 取消加载
-   */
-  suspend fun cancelLoad()
-}
-
-/**
- * 创建[FLoader]
- */
-private fun FLoader(): FLoader = LoaderImpl()
-
-//-------------------- state --------------------
-
-private data class LoaderState(
-  /** 是否正在加载中 */
-  val isLoading: Boolean = false,
-)
-
-//-------------------- impl --------------------
-
-private class LoaderImpl : FLoader {
-
-  private val _mutator = FMutator()
-  private val _state = MutableStateFlow(LoaderState())
-
-  override val state: LoaderState
-    get() = _state.value
-
-  override val stateFlow: StateFlow<LoaderState>
-    get() = _state.asStateFlow()
-
-  override fun isLoading(): Boolean {
-    return state.isLoading
-  }
-
-  override suspend fun <T> load(
-    onFinish: () -> Unit,
-    onLoad: suspend () -> T,
-  ): Result<T> {
-    return _mutator.mutate {
-      try {
-        _state.update { it.copy(isLoading = true) }
-        onLoad().let { data ->
-          currentCoroutineContext().ensureActive()
-          Result.success(data)
-        }
-      } catch (e: Throwable) {
-        if (e is CancellationException) throw e
-        Result.failure(e)
-      } finally {
-        _state.update { it.copy(isLoading = false) }
-        onFinish()
-      }
-    }
-  }
-
-  override suspend fun cancelLoad() {
-    _mutator.cancelAndJoin()
-  }
-}
-
-//-------------------- utils --------------------
-
-private class FMutator {
-  private class Mutator(val priority: Int, val job: Job) {
-    fun canInterrupt(other: Mutator) = priority >= other.priority
-
-    fun cancel() = job.cancel(MutationInterruptedException())
-  }
-
-  private val currentMutator = AtomicReference<Mutator?>(null)
-  private val mutex = Mutex()
-
-  private fun tryMutateOrCancel(mutator: Mutator) {
-    while (true) {
-      val oldMutator = currentMutator.get()
-      if (oldMutator == null || mutator.canInterrupt(oldMutator)) {
-        if (currentMutator.compareAndSet(oldMutator, mutator)) {
-          oldMutator?.cancel()
-          break
-        }
-      } else throw CancellationException("Current mutation had a higher priority")
-    }
-  }
-
-  suspend fun <R> mutate(
-    priority: Int = 0,
-    block: suspend () -> R,
-  ) = coroutineScope {
-    val mutator = Mutator(priority, coroutineContext[Job]!!)
-
-    tryMutateOrCancel(mutator)
-
-    mutex.withLock {
-      try {
-        block()
-      } finally {
-        currentMutator.compareAndSet(mutator, null)
-      }
-    }
-  }
-
-  //-------------------- ext --------------------
-
-  suspend fun cancelAndJoin() {
-    while (true) {
-      val mutator = currentMutator.get() ?: return
-      mutator.cancel()
-      try {
-        mutator.job.join()
-      } finally {
-        currentMutator.compareAndSet(mutator, null)
-      }
-    }
-  }
-}
-
-private class MutationInterruptedException : CancellationException("Mutation interrupted") {
-  override fun fillInStackTrace(): Throwable {
-    // Avoid null.clone() on Android <= 6.0 when accessing stackTrace
     stackTrace = emptyArray()
     return this
   }
