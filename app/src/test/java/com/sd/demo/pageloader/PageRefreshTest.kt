@@ -158,8 +158,9 @@ class PageRefreshTest {
 
   @Test
   fun `test refresh notify loading`() = runTest {
-    val loader = FPageLoader<Int> { page, pageData -> null }
+    val loader = FPageLoader<Int> { _, _ -> null }
     assertEquals(false, loader.state.isRefreshing)
+
     launch {
       loader.refresh(notifyLoading = false) {
         delay(5_000)

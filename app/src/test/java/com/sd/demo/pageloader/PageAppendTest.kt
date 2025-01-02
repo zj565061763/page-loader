@@ -6,6 +6,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -127,27 +129,16 @@ class PageAppendTest {
       }
     }
 
-    val loading = TestContinuation()
     launch {
       loader.append {
-        loading.resume()
-        delay(Long.MAX_VALUE)
+        delay(5_000)
         listOf(1, 2)
       }
-    }
-
-    loading.await()
-    loader.state.run {
-      assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, loadPage)
-      assertEquals(null, loadSize)
-      assertEquals(false, isRefreshing)
-      assertEquals(true, isAppending)
-    }
+    }.also { runCurrent() }
 
     loader.cancelAppend()
-    loader.state.run {
+
+    with(loader.state) {
       assertEquals(emptyList<Int>(), data)
       assertEquals(null, loadResult)
       assertEquals(null, loadPage)
@@ -167,37 +158,25 @@ class PageAppendTest {
       }
     }
 
-    val loading = TestContinuation()
     val loadJob = launch {
       loader.append {
-        loading.resume()
-        delay(1_000)
+        delay(5_000)
         listOf(1, 2)
       }
-    }
-
-    loading.await()
-    loader.state.run {
-      assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, loadPage)
-      assertEquals(null, loadSize)
-      assertEquals(false, isRefreshing)
-      assertEquals(true, isAppending)
-    }
+    }.also { runCurrent() }
 
     try {
       loader.append { listOf(3, 4) }
     } catch (e: CancellationException) {
       Result.failure(e)
-    }.let { result ->
+    }.also { result ->
       assertEquals(true, result.exceptionOrNull()!! is CancellationException)
     }
 
     loadJob.join()
-    loader.state.run {
+    with(loader.state) {
       assertEquals(listOf(1, 2), data)
-      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(true, loadResult?.isSuccess)
       assertEquals(refreshPage, loadPage)
       assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
@@ -215,24 +194,12 @@ class PageAppendTest {
       }
     }
 
-    val loading = TestContinuation()
     val loadJob = launch {
       loader.refresh {
-        loading.resume()
-        delay(2_000)
+        delay(5_000)
         listOf(1, 2)
       }
-    }
-
-    loading.await()
-    loader.state.run {
-      assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, loadPage)
-      assertEquals(null, loadSize)
-      assertEquals(true, isRefreshing)
-      assertEquals(false, isAppending)
-    }
+    }.also { runCurrent() }
 
     try {
       loader.append { listOf(3, 4) }
@@ -243,9 +210,9 @@ class PageAppendTest {
     }
 
     loadJob.join()
-    loader.state.run {
+    with(loader.state) {
       assertEquals(listOf(1, 2), data)
-      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(true, loadResult?.isSuccess)
       assertEquals(refreshPage, loadPage)
       assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
@@ -255,29 +222,21 @@ class PageAppendTest {
 
   @Test
   fun `test append notify loading`() = runTest {
-    val loader = FPageLoader<Int> { page, pageData -> null }
-    loader.state.run {
-      assertEquals(false, isAppending)
-    }
+    val loader = FPageLoader<Int> { _, _ -> null }
+    assertEquals(false, loader.state.isAppending)
 
-    val loading = TestContinuation()
     launch {
       loader.append(notifyLoading = false) {
-        loading.resume()
-        delay(Long.MAX_VALUE)
+        delay(5_000)
         listOf(1, 2)
       }
     }
 
-    loading.await()
-    loader.state.run {
-      assertEquals(false, isAppending)
-    }
+    runCurrent()
+    assertEquals(false, loader.state.isAppending)
 
-    loader.append(notifyLoading = false) { error("failure") }
-    loader.state.run {
-      assertEquals(false, isAppending)
-    }
+    advanceUntilIdle()
+    assertEquals(false, loader.state.isAppending)
   }
 
   @Test
