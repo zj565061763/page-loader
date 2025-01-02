@@ -3,12 +3,15 @@ package com.sd.demo.pageloader
 import app.cash.turbine.test
 import com.sd.lib.pageloader.FPageLoader
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class PageLoaderTest {
   @Test
   fun `test default state`() {
@@ -90,17 +93,14 @@ class PageLoaderTest {
       }
     }
 
-    val loading = TestContinuation()
     launch {
       loader.refresh {
-        loading.resume()
-        delay(Long.MAX_VALUE)
+        delay(5_000)
         listOf(1, 2)
       }
-    }
+    }.also { runCurrent() }
 
-    loading.await()
-    loader.state.run {
+    with(loader.state) {
       assertEquals(emptyList<Int>(), data)
       assertEquals(null, loadResult)
       assertEquals(null, loadPage)
@@ -110,7 +110,8 @@ class PageLoaderTest {
     }
 
     loader.cancelRefresh()
-    loader.state.run {
+
+    with(loader.state) {
       assertEquals(emptyList<Int>(), data)
       assertEquals(null, loadResult)
       assertEquals(null, loadPage)
