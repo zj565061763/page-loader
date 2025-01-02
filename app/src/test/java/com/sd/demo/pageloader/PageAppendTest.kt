@@ -250,7 +250,7 @@ class PageAppendTest {
     }
 
     loader.stateFlow.test {
-      awaitItem().run {
+      with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
         assertEquals(null, loadResult)
         assertEquals(null, loadPage)
@@ -261,7 +261,7 @@ class PageAppendTest {
 
       loader.append { listOf(3, 4) }
 
-      awaitItem().run {
+      with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
         assertEquals(null, loadResult)
         assertEquals(null, loadPage)
@@ -269,17 +269,17 @@ class PageAppendTest {
         assertEquals(false, isRefreshing)
         assertEquals(true, isAppending)
       }
-      awaitItem().run {
+      with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
-        assertEquals(Result.success(Unit), loadResult)
+        assertEquals(true, loadResult?.isSuccess)
         assertEquals(refreshPage, loadPage)
         assertEquals(2, loadSize)
         assertEquals(false, isRefreshing)
         assertEquals(true, isAppending)
       }
-      awaitItem().run {
+      with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
-        assertEquals(Result.success(Unit), loadResult)
+        assertEquals(true, loadResult?.isSuccess)
         assertEquals(refreshPage, loadPage)
         assertEquals(2, loadSize)
         assertEquals(false, isRefreshing)
