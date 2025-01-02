@@ -200,7 +200,7 @@ class PageLoaderTest {
     }
 
     loader.stateFlow.test {
-      awaitItem().run {
+      with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
         assertEquals(null, loadResult)
         assertEquals(null, loadPage)
@@ -211,7 +211,7 @@ class PageLoaderTest {
 
       loader.refresh { listOf(3, 4) }
 
-      awaitItem().run {
+      with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
         assertEquals(null, loadResult)
         assertEquals(null, loadPage)
@@ -219,17 +219,17 @@ class PageLoaderTest {
         assertEquals(true, isRefreshing)
         assertEquals(false, isAppending)
       }
-      awaitItem().run {
+      with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
-        assertEquals(Result.success(Unit), loadResult)
+        assertEquals(true, loadResult?.isSuccess)
         assertEquals(refreshPage, loadPage)
         assertEquals(2, loadSize)
         assertEquals(true, isRefreshing)
         assertEquals(false, isAppending)
       }
-      awaitItem().run {
+      with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
-        assertEquals(Result.success(Unit), loadResult)
+        assertEquals(true, loadResult?.isSuccess)
         assertEquals(refreshPage, loadPage)
         assertEquals(2, loadSize)
         assertEquals(false, isRefreshing)
