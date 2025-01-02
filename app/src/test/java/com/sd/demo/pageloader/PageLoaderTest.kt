@@ -13,7 +13,7 @@ class PageLoaderTest {
   @Test
   fun `test default state`() {
     val loader = FPageLoader<Int> { page, pageData -> null }
-    loader.state.run {
+    with(loader.state) {
       assertEquals(emptyList<Int>(), data)
       assertEquals(1, refreshPage)
       assertEquals(null, loadResult)
@@ -36,14 +36,17 @@ class PageLoaderTest {
 
     loader.refresh { page ->
       assertEquals(refreshPage, page)
+      assertEquals(refreshPage, 1)
+      assertEquals(true, loader.state.isRefreshing)
+      assertEquals(false, loader.state.isAppending)
       listOf(1, 2)
-    }.let { result ->
-      assertEquals(true, result.isSuccess)
+    }.also { result ->
       assertEquals(listOf(1, 2), result.getOrThrow())
     }
-    loader.state.run {
+
+    with(loader.state) {
       assertEquals(listOf(1, 2), data)
-      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(true, loadResult?.isSuccess)
       assertEquals(refreshPage, loadPage)
       assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
