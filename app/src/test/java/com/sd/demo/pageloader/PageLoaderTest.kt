@@ -72,7 +72,7 @@ class PageLoaderTest {
 
     with(loader.state) {
       assertEquals(emptyList<Int>(), data)
-      assertEquals("failure", loadResult!!.exceptionOrNull()!!.message)
+      assertEquals("refresh failure", loadResult!!.exceptionOrNull()!!.message)
       assertEquals(null, loadPage)
       assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
