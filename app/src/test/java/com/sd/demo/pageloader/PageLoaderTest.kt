@@ -64,11 +64,13 @@ class PageLoaderTest {
       }
     }
 
-    loader.refresh { error("failure") }.let { result ->
-      assertEquals(true, result.isFailure)
-      assertEquals("failure", result.exceptionOrNull()!!.message)
+    loader.refresh {
+      error("refresh failure")
+    }.also { result ->
+      assertEquals("refresh failure", result.exceptionOrNull()!!.message)
     }
-    loader.state.run {
+
+    with(loader.state) {
       assertEquals(emptyList<Int>(), data)
       assertEquals("failure", loadResult!!.exceptionOrNull()!!.message)
       assertEquals(null, loadPage)
