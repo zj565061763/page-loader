@@ -46,11 +46,11 @@ interface FPageLoader<T> {
 
   interface LoadScope<T> {
     /** 当前状态 */
-    val currentState: PageState<T>
+    val pageState: PageState<T>
 
     /** 刷新数据的页码，例如数据源页码从1开始，那么[refreshPage]就为1 */
     val refreshPage: Int
-      get() = currentState.refreshPage
+      get() = pageState.refreshPage
   }
 }
 
@@ -127,7 +127,7 @@ private class PageLoaderImpl<T>(
   override val stateFlow: StateFlow<PageState<T>>
     get() = _stateFlow.asStateFlow()
 
-  override val currentState: PageState<T>
+  override val pageState: PageState<T>
     get() = _stateFlow.value
 
   override suspend fun refresh(
