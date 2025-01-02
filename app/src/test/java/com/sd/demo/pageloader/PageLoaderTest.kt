@@ -15,9 +15,9 @@ class PageLoaderTest {
     val loader = FPageLoader<Int> { page, pageData -> null }
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -42,9 +42,9 @@ class PageLoaderTest {
     }
     loader.state.run {
       assertEquals(listOf(1, 2), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage, page)
-      assertEquals(2, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage, loadPage)
+      assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -66,9 +66,9 @@ class PageLoaderTest {
     }
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals("failure", result!!.exceptionOrNull()!!.message)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals("failure", loadResult!!.exceptionOrNull()!!.message)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -96,9 +96,9 @@ class PageLoaderTest {
     loading.await()
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(true, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -106,9 +106,9 @@ class PageLoaderTest {
     loader.cancelRefresh()
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -136,9 +136,9 @@ class PageLoaderTest {
     loading.await()
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(true, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -146,9 +146,9 @@ class PageLoaderTest {
     loader.refresh { listOf(3, 4) }
     loader.state.run {
       assertEquals(listOf(3, 4), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage, page)
-      assertEquals(2, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage, loadPage)
+      assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -176,9 +176,9 @@ class PageLoaderTest {
     loading.await()
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(true, isAppending)
     }
@@ -186,9 +186,9 @@ class PageLoaderTest {
     loader.refresh { listOf(3, 4) }
     loader.state.run {
       assertEquals(listOf(3, 4), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage, page)
-      assertEquals(2, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage, loadPage)
+      assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -234,9 +234,9 @@ class PageLoaderTest {
     loader.stateFlow.test {
       awaitItem().run {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, result)
-        assertEquals(null, page)
-        assertEquals(null, pageSize)
+        assertEquals(null, loadResult)
+        assertEquals(null, loadPage)
+        assertEquals(null, loadSize)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
@@ -245,25 +245,25 @@ class PageLoaderTest {
 
       awaitItem().run {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, result)
-        assertEquals(null, page)
-        assertEquals(null, pageSize)
+        assertEquals(null, loadResult)
+        assertEquals(null, loadPage)
+        assertEquals(null, loadSize)
         assertEquals(true, isRefreshing)
         assertEquals(false, isAppending)
       }
       awaitItem().run {
         assertEquals(listOf(3, 4), data)
-        assertEquals(Result.success(Unit), result)
-        assertEquals(refreshPage, page)
-        assertEquals(2, pageSize)
+        assertEquals(Result.success(Unit), loadResult)
+        assertEquals(refreshPage, loadPage)
+        assertEquals(2, loadSize)
         assertEquals(true, isRefreshing)
         assertEquals(false, isAppending)
       }
       awaitItem().run {
         assertEquals(listOf(3, 4), data)
-        assertEquals(Result.success(Unit), result)
-        assertEquals(refreshPage, page)
-        assertEquals(2, pageSize)
+        assertEquals(Result.success(Unit), loadResult)
+        assertEquals(refreshPage, loadPage)
+        assertEquals(2, loadSize)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
@@ -291,9 +291,9 @@ class PageLoaderTest {
     }
     loader.state.run {
       assertEquals(listOf(1, 2), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage, page)
-      assertEquals(2, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage, loadPage)
+      assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -308,9 +308,9 @@ class PageLoaderTest {
     }
     loader.state.run {
       assertEquals(listOf(1, 2, 3, 4), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage + 1, page)
-      assertEquals(2, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage + 1, loadPage)
+      assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -325,9 +325,9 @@ class PageLoaderTest {
     }
     loader.state.run {
       assertEquals(listOf(1, 2, 3, 4), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage + 2, page)
-      assertEquals(0, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage + 2, loadPage)
+      assertEquals(0, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -343,9 +343,9 @@ class PageLoaderTest {
     }
     loader.state.run {
       assertEquals(listOf(1, 2, 3, 4), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage + 2, page)
-      assertEquals(0, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage + 2, loadPage)
+      assertEquals(0, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -367,9 +367,9 @@ class PageLoaderTest {
     }
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals("failure", result!!.exceptionOrNull()!!.message)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals("failure", loadResult!!.exceptionOrNull()!!.message)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -397,9 +397,9 @@ class PageLoaderTest {
     loading.await()
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(true, isAppending)
     }
@@ -407,9 +407,9 @@ class PageLoaderTest {
     loader.cancelAppend()
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -437,9 +437,9 @@ class PageLoaderTest {
     loading.await()
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(true, isAppending)
     }
@@ -455,9 +455,9 @@ class PageLoaderTest {
     loadJob.join()
     loader.state.run {
       assertEquals(listOf(1, 2), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage, page)
-      assertEquals(2, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage, loadPage)
+      assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -485,9 +485,9 @@ class PageLoaderTest {
     loading.await()
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
-      assertEquals(null, page)
-      assertEquals(null, pageSize)
+      assertEquals(null, loadResult)
+      assertEquals(null, loadPage)
+      assertEquals(null, loadSize)
       assertEquals(true, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -503,9 +503,9 @@ class PageLoaderTest {
     loadJob.join()
     loader.state.run {
       assertEquals(listOf(1, 2), data)
-      assertEquals(Result.success(Unit), result)
-      assertEquals(refreshPage, page)
-      assertEquals(2, pageSize)
+      assertEquals(Result.success(Unit), loadResult)
+      assertEquals(refreshPage, loadPage)
+      assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -551,9 +551,9 @@ class PageLoaderTest {
     loader.stateFlow.test {
       awaitItem().run {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, result)
-        assertEquals(null, page)
-        assertEquals(null, pageSize)
+        assertEquals(null, loadResult)
+        assertEquals(null, loadPage)
+        assertEquals(null, loadSize)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
@@ -562,25 +562,25 @@ class PageLoaderTest {
 
       awaitItem().run {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, result)
-        assertEquals(null, page)
-        assertEquals(null, pageSize)
+        assertEquals(null, loadResult)
+        assertEquals(null, loadPage)
+        assertEquals(null, loadSize)
         assertEquals(false, isRefreshing)
         assertEquals(true, isAppending)
       }
       awaitItem().run {
         assertEquals(listOf(3, 4), data)
-        assertEquals(Result.success(Unit), result)
-        assertEquals(refreshPage, page)
-        assertEquals(2, pageSize)
+        assertEquals(Result.success(Unit), loadResult)
+        assertEquals(refreshPage, loadPage)
+        assertEquals(2, loadSize)
         assertEquals(false, isRefreshing)
         assertEquals(true, isAppending)
       }
       awaitItem().run {
         assertEquals(listOf(3, 4), data)
-        assertEquals(Result.success(Unit), result)
-        assertEquals(refreshPage, page)
-        assertEquals(2, pageSize)
+        assertEquals(Result.success(Unit), loadResult)
+        assertEquals(refreshPage, loadPage)
+        assertEquals(2, loadSize)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
