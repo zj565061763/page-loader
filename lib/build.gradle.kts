@@ -1,6 +1,6 @@
 plugins {
-  id("com.android.library")
-  id("org.jetbrains.kotlin.android")
+  alias(libs.plugins.android.library)
+  alias(libs.plugins.kotlin.android)
   `maven-publish`
 }
 
@@ -16,7 +16,13 @@ android {
     consumerProguardFiles("consumer-rules.pro")
   }
 
+  compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+  }
+
   kotlinOptions {
+    jvmTarget = "1.8"
     freeCompilerArgs += "-module-name=$libGroupId.$libArtifactId"
   }
 
@@ -27,12 +33,8 @@ android {
   }
 }
 
-kotlin {
-  jvmToolchain(8)
-}
-
 dependencies {
-  api(libs.kotlinx.coroutines)
+  compileOnly(libs.kotlinx.coroutines)
 }
 
 publishing {
@@ -41,7 +43,6 @@ publishing {
       groupId = libGroupId
       artifactId = libArtifactId
       version = libVersion
-
       afterEvaluate {
         from(components["release"])
       }
