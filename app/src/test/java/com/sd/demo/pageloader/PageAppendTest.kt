@@ -25,52 +25,52 @@ class PageAppendTest {
     // 1
     loader.append { page ->
       assertEquals(refreshPage, page)
+      assertEquals(refreshPage, 1)
+      assertEquals(false, loader.state.isRefreshing)
+      assertEquals(true, loader.state.isAppending)
       listOf(1, 2)
-    }.let { result ->
-      assertEquals(true, result.isSuccess)
+    }.also { result ->
       assertEquals(listOf(1, 2), result.getOrThrow())
-    }
-    loader.state.run {
-      assertEquals(listOf(1, 2), data)
-      assertEquals(Result.success(Unit), loadResult)
-      assertEquals(refreshPage, loadPage)
-      assertEquals(2, loadSize)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      with(loader.state) {
+        assertEquals(listOf(1, 2), data)
+        assertEquals(true, loadResult?.isSuccess)
+        assertEquals(refreshPage, loadPage)
+        assertEquals(2, loadSize)
+        assertEquals(false, isRefreshing)
+        assertEquals(false, isAppending)
+      }
     }
 
     // 2
     loader.append { page ->
       assertEquals(refreshPage + 1, page)
       listOf(3, 4)
-    }.let { result ->
-      assertEquals(true, result.isSuccess)
+    }.also { result ->
       assertEquals(listOf(3, 4), result.getOrThrow())
-    }
-    loader.state.run {
-      assertEquals(listOf(1, 2, 3, 4), data)
-      assertEquals(Result.success(Unit), loadResult)
-      assertEquals(refreshPage + 1, loadPage)
-      assertEquals(2, loadSize)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      with(loader.state) {
+        assertEquals(listOf(1, 2, 3, 4), data)
+        assertEquals(true, loadResult?.isSuccess)
+        assertEquals(refreshPage + 1, loadPage)
+        assertEquals(2, loadSize)
+        assertEquals(false, isRefreshing)
+        assertEquals(false, isAppending)
+      }
     }
 
     // 3 空数据
     loader.append { page ->
       assertEquals(refreshPage + 2, page)
       emptyList()
-    }.let { result ->
-      assertEquals(true, result.isSuccess)
+    }.also { result ->
       assertEquals(emptyList<Int>(), result.getOrThrow())
-    }
-    loader.state.run {
-      assertEquals(listOf(1, 2, 3, 4), data)
-      assertEquals(Result.success(Unit), loadResult)
-      assertEquals(refreshPage + 2, loadPage)
-      assertEquals(0, loadSize)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      with(loader.state) {
+        assertEquals(listOf(1, 2, 3, 4), data)
+        assertEquals(true, loadResult?.isSuccess)
+        assertEquals(refreshPage + 2, loadPage)
+        assertEquals(0, loadSize)
+        assertEquals(false, isRefreshing)
+        assertEquals(false, isAppending)
+      }
     }
 
     // 4
@@ -78,17 +78,16 @@ class PageAppendTest {
       // 由于上一次加载的是空数据，所以此次的page和上一次应该一样
       assertEquals(refreshPage + 2, page)
       emptyList()
-    }.let { result ->
-      assertEquals(true, result.isSuccess)
+    }.also { result ->
       assertEquals(emptyList<Int>(), result.getOrThrow())
-    }
-    loader.state.run {
-      assertEquals(listOf(1, 2, 3, 4), data)
-      assertEquals(Result.success(Unit), loadResult)
-      assertEquals(refreshPage + 2, loadPage)
-      assertEquals(0, loadSize)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      with(loader.state) {
+        assertEquals(listOf(1, 2, 3, 4), data)
+        assertEquals(true, loadResult?.isSuccess)
+        assertEquals(refreshPage + 2, loadPage)
+        assertEquals(0, loadSize)
+        assertEquals(false, isRefreshing)
+        assertEquals(false, isAppending)
+      }
     }
   }
 
