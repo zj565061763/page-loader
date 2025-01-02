@@ -5,7 +5,7 @@ import com.sd.lib.pageloader.FPageLoader
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -15,6 +15,7 @@ class PageLoaderTest {
     val loader = FPageLoader<Int> { page, pageData -> null }
     loader.state.run {
       assertEquals(emptyList<Int>(), data)
+      assertEquals(1, refreshPage)
       assertEquals(null, loadResult)
       assertEquals(null, loadPage)
       assertEquals(null, loadSize)
@@ -24,7 +25,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test refresh success`(): Unit = runBlocking {
+  fun `test refresh success`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -51,7 +52,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test refresh failure`(): Unit = runBlocking {
+  fun `test refresh failure`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -75,7 +76,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test refresh cancel`(): Unit = runBlocking {
+  fun `test refresh cancel`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -115,7 +116,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test refresh when refreshing`(): Unit = runBlocking {
+  fun `test refresh when refreshing`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -155,7 +156,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test refresh when appending`(): Unit = runBlocking {
+  fun `test refresh when appending`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -195,7 +196,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test refresh notify loading`(): Unit = runBlocking {
+  fun `test refresh notify loading`() = runTest {
     val loader = FPageLoader<Int> { page, pageData -> null }
     loader.state.run {
       assertEquals(false, isRefreshing)
@@ -222,7 +223,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test refresh flow`(): Unit = runBlocking {
+  fun `test refresh flow`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -272,7 +273,7 @@ class PageLoaderTest {
 
 
   @Test
-  fun `test append success`(): Unit = runBlocking {
+  fun `test append success`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -352,7 +353,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test append failure`(): Unit = runBlocking {
+  fun `test append failure`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -376,7 +377,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test append cancel`(): Unit = runBlocking {
+  fun `test append cancel`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -416,7 +417,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test append when appending`(): Unit = runBlocking {
+  fun `test append when appending`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -464,7 +465,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test append when refreshing`(): Unit = runBlocking {
+  fun `test append when refreshing`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
@@ -512,7 +513,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test append notify loading`(): Unit = runBlocking {
+  fun `test append notify loading`() = runTest {
     val loader = FPageLoader<Int> { page, pageData -> null }
     loader.state.run {
       assertEquals(false, isAppending)
@@ -539,7 +540,7 @@ class PageLoaderTest {
   }
 
   @Test
-  fun `test append flow`(): Unit = runBlocking {
+  fun `test append flow`() = runTest {
     val list = mutableListOf<Int>()
     val loader = FPageLoader { page, pageData ->
       list.apply {
